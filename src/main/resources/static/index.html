@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Redis Topic Subscriber by markandshin</title>
+<script
+	src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script
+	src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.3.0/sockjs.js"></script>
+<script
+	src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+<script type="text/javascript">
+  var stompClient = null;
+
+  function setConnected(connected) {
+    $("#subscribe").prop("disabled", connected);
+
+    if (connected) {
+      $("#topic-messages").show();
+    } else {
+      $("#topic-messages").hide();
+    }
+    $("#message").html("");
+  }
+
+  function subscribe() {
+    var socket = new SockJS('/redisdemo');
+    stompClient = Stomp.over(socket);
+    var topic = $('#topic').val();
+    stompClient.connect({}, function(frame) {
+      setConnected(true);
+      console.log('Connected: ' + frame);
+
+      stompClient.subscribe('/topic/' + topic, function(message) {
+        $("#message").append("<tr><td>" + message.body + "</td></tr>");
+      });
+      
+      stompClient.send("/app/subscribe", {}, topic);
+    });
+
+
+  }
+  function disconnect() {
+    if (stompClient !== null) {
+      stompClient.disconnect();
+    }
+    setConnected(false);
+    console.log("Disconnected");
+  }
+
+  $(function() {
+    $("form").on('submit', function(e) {
+      e.preventDefault();
+    });
+    $("#subscribe").click(function() {
+      subscribe();
+    });
+  });
+</script>
+</head>
+<body>
+	<noscript>
+		<h2 style="color: #ff0000">Seems your browser doesn't support
+			Javascript! Websocket relies on Javascript being enabled. Please
+			enable Javascript and reload this page!</h2>
+	</noscript>
+	<div id="main-content">
+		<h1>Message Subscriber</h1>
+		<form>
+			<div>
+				<label for="topic">Topic</label><input type="text" name="topic"
+					id="topic" />
+			</div>
+
+			<input type="button" value="Subscribe" id="subscribe" />
+		</form>
+		<table id="topic-messages" class="table table-striped">
+			<thead>
+				<tr>
+					<th>Topic: <span id="topic-name"></span></th>
+				</tr>
+			</thead>
+			<tbody id="message">
+			</tbody>
+		</table>
+	</div>
+</body>
+</html>
